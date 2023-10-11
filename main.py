@@ -126,8 +126,42 @@ def seconds_to_mmss(seconds):
 
 # --------------------------------------
 
+def plot_week_data(df, week_number, workout, workout_date):
+    # # Plotting
+    x = df['Name']
+    y = df['AverageTimeInSeconds']
+
+    plt.figure(figsize=(10,10))
+    plt.plot(x,y,label=f'Week {week_number} Results', marker='o', color='b')
+
+    # Set equidistant y-tick positions (e.g., every 60 seconds)
+    min_time_seconds = min(y)
+    max_time_seconds = max(y)
+    y_ticks_seconds = range(int(min_time_seconds), int(max_time_seconds)+1, 1)
+    # y_ticks_seconds = range(int(min_time_seconds // 60) * 60, int(max_time_seconds // 60) * 60 + 60, 60)
+
+    # Convert y-tick positions to mm:ss.s format
+    y_labels = [seconds_to_mmss(y_tick) for y_tick in y_ticks_seconds]
+
+    # y_labels = week1_df['AverageTimeString']
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(y_ticks_seconds, y_labels)
+
+    plt.xlabel('Name')
+    plt.ylabel('Split')
+    plt.title(f'{workout_date} | Week {week_number} Erg Results: {workout}')
+
+    for i, j, label in zip(x,y, df['AverageTimeString']):
+        plt.annotate(label, (i,j), textcoords='offset points', xytext=(-5, 5), ha='right', rotation=-15)
+
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+# --------------------------------------
+
 # Import data
-df = pd.read_excel('data/master.xlsx')
+df = pd.read_excel('data/231011.xlsx')
 
 # Display all columns
 pd.set_option('display.max_columns', None)
@@ -144,16 +178,6 @@ for col in time_columns:
     df[col] = df[col].apply(time_str_to_timedelta)
 
 df['AverageTimeTimeDelta'] = df[time_columns].mean(axis=1, skipna=True)
-
-
-# time_deltas_seconds = []
-# for td in df['AverageTime']:
-#     if isinstance(td, timedelta):
-#         time_deltas_seconds.append(td.total_seconds())
-
-# print(time_deltas_seconds)
-
-
 
 df['AverageTimeString'] = df['AverageTimeTimeDelta'].apply(format_timedelta)
 
@@ -172,48 +196,25 @@ df = df.dropna(subset=['AverageTimeInSeconds'])
 df['Dates'] = pd.to_datetime(df['Enter today\'s date'])
 
 # # Filter by a date range
-week1 = ('2023-09-12', '2023-09-19')
-week2 = ('2023-09-19', '2023-09-21')
-week3 = ('2023-09-26', '2023-09-28')
-week4 = ('2023-10-03', '2023-10-05')
+week1 = ('2023-09-12', '2023-09-19', '3x8min r20,22,24', '2023-09-13')
+week2 = ('2023-09-19', '2023-09-21', '2x12min r20,22,24', '2023-09-20')
+week3 = ('2023-09-26', '2023-09-28', '3x9min r20,22,24', '2023-09-27')
+week4 = ('2023-10-03', '2023-10-05', '2x13.5min r20,22,24', '2023-10-04')
+week5 = ('2023-10-10', '2023-10-12', '3x10min r20,22,24', '2023-10-11')
 
-week1_df = df[(df['Dates'] >= week1[0]) & (df['Dates'] <= week1[1])]
+weeks = [week1, week2, week3, week4, week5]
 
-# # Print the filtered DataFrame
-print(week1_df.head())
+for week_number, week in enumerate(weeks):
+    week_df = df[(df['Dates'] >= week[0]) & (df['Dates'] <= week[1])]
+    workout = week[2]
+    actual_workout_date = week[3]
+    plot_week_data(week_df, week_number + 1, workout, actual_workout_date)
 
+unique_names = df['Name'].unique()
+columns_of_interest = ['Name', 'Dates', 'AverageTimeString']
 
-# # Plotting
-x = week1_df['Name']
-y = week1_df['AverageTimeInSeconds']
-
-plt.figure(figsize=(20,10))
-plt.plot(x,y,label='Week 1 Results', marker='o', color='b')
-
-# Set equidistant y-tick positions (e.g., every 60 seconds)
-min_time_seconds = min(y)
-max_time_seconds = max(y)
-y_ticks_seconds = range(int(min_time_seconds), int(max_time_seconds)+1, 1)
-# y_ticks_seconds = range(int(min_time_seconds // 60) * 60, int(max_time_seconds // 60) * 60 + 60, 60)
-
-# Convert y-tick positions to mm:ss.s format
-y_labels = [seconds_to_mmss(y_tick) for y_tick in y_ticks_seconds]
-
-# y_labels = week1_df['AverageTimeString']
-plt.xticks(rotation=45, ha='right')
-plt.yticks(y_ticks_seconds, y_labels)
-
-plt.xlabel('Name')
-plt.ylabel('Split')
-plt.title('Week 1 Erg Results')
-
-for i, j, label in zip(x,y, week1_df['AverageTimeString']):
-    plt.annotate(label, (i,j), textcoords='offset points', xytext=(-5, 5), ha='right', rotation=-15)
-
-plt.legend()
-plt.grid(True)
-plt.show()
-
-
-
-# print(df.head())
+for name in unique_names:
+    filtered_df = df[df['Name'] == name]
+    filtered_df = filtered_df.loc[:, columns_of_interest]
+    filtered_df.sort_values(by='Dates', ascending=True, inplace=True)
+    print(filtered_df)
