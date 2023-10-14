@@ -197,7 +197,7 @@ def plot_week_data(df, week_number, workout, workout_date):
     file_path = os.path.join(team_path, file_name)
 
 
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(20,10))
     plt.plot(x,y,label=f'Week {week_number} Results', marker='o', color='b')
 
     # Set equidistant y-tick positions (e.g., every 60 seconds)
