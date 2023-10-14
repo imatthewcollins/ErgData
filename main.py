@@ -3,12 +3,11 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import timedelta
-import math
+import os
 
 
 master_file = "data/master.xlsx"
 new_data_file = "data/new_data.xlsx"
-run_master = True
 
 # --------------------------------------
 
@@ -131,10 +130,72 @@ def seconds_to_mmss(seconds):
 
 # --------------------------------------
 
+def plot_split_versus_data_for_athlete(name, df):
+    current_directory = os.getcwd()
+
+    x = df['Dates']
+    y = df['AverageTimeInSeconds']
+
+    formatted_name = name.lower().replace(" ", "_")
+    subfolder_path = os.path.join(current_directory, 'graphs')
+    athlete_path = os.path.join(subfolder_path, 'athlete')
+    file_name = f'{formatted_name}.png'
+
+    if not os.path.exists(subfolder_path):
+        os.makedirs(subfolder_path)
+    if not os.path.exists(athlete_path):
+        os.makedirs(athlete_path)
+    file_path = os.path.join(athlete_path, file_name)
+
+    plt.figure(figsize=(20,10))
+    plt.plot(x,y,label=name, marker='o', color='b')
+
+    # Set equidistant y-tick positions (e.g., every 60 seconds)
+    min_time_seconds = min(y)
+    max_time_seconds = max(y)
+    y_ticks_seconds = range(int(min_time_seconds), int(max_time_seconds)+1, 1)
+
+    # Convert y-tick positions to mm:ss.s format
+    y_labels = [seconds_to_mmss(y_tick) for y_tick in y_ticks_seconds]
+
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(y_ticks_seconds, y_labels)
+
+    plt.xlabel('Date')
+    plt.ylabel('Split')
+    plt.title(f'{name} Erg Results')
+
+    for i, j, label in zip(x,y, df['AverageTimeString']):
+        date = i.strftime('%Y-%m-%d')
+        plt.annotate(f'{label}\n{date}', (i,j), textcoords='offset points', xytext=(10, 5), ha='left', rotation=0)
+
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(file_path)
+    plt.close()
+
+# --------------------------------------
+
 def plot_week_data(df, week_number, workout, workout_date):
     # # Plotting
     x = df['Name']
     y = df['AverageTimeInSeconds']
+
+    formatted_workout_date = workout_date.replace("-", "")[2:]
+    formatted_workout = workout.split(" ")[0].replace(".", "_")
+    formatted_file = f"{formatted_workout_date}_{formatted_workout}"
+
+    current_directory = os.getcwd()
+    subfolder_path = os.path.join(current_directory, 'graphs')
+    team_path = os.path.join(subfolder_path, 'team')
+    file_name = f'{formatted_file}.png'
+
+    if not os.path.exists(subfolder_path):
+        os.makedirs(subfolder_path)
+    if not os.path.exists(team_path):
+        os.makedirs(team_path)
+    file_path = os.path.join(team_path, file_name)
+
 
     plt.figure(figsize=(10,10))
     plt.plot(x,y,label=f'Week {week_number} Results', marker='o', color='b')
@@ -161,7 +222,8 @@ def plot_week_data(df, week_number, workout, workout_date):
 
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.savefig(file_path)
+    plt.close()
 
 # --------------------------------------
 
@@ -173,14 +235,26 @@ def plot_athletes_vs_split_for_workouts(weeks):
         plot_week_data(week_df, week_number + 1, workout, actual_workout_date)
 
 # --------------------------------------
+
+def merge_data(master_df, new_data_df):
+    common_ids = set(master_df['ID']) & set(new_data_df['ID'])
+    new_data_df_filtered = new_data_df[~new_data_df['ID'].isin(common_ids)]
+
+    new_master_df = pd.concat([master_df, new_data_df_filtered], ignore_index=True)
+    new_master_df.to_excel('data/updated_master.xlsx', index=False)
+
+    return new_master_df
+
+
+# --------------------------------------
 # PREPARING THE DATA
 # --------------------------------------
 
 # Import data
-if run_master:
-    df = pd.read_excel(master_file)
-else:
-    df = pd.read_excel(new_data_file)
+
+master_df = pd.read_excel(master_file)
+new_data_df = pd.read_excel(new_data_file)
+df = merge_data(master_df, new_data_df)
 
 # Display all columns
 pd.set_option('display.max_columns', None)
@@ -225,14 +299,15 @@ week5 = ('2023-10-10', '2023-10-12', '3x10min r20,22,24', '2023-10-11')
 
 weeks = [week1, week2, week3, week4, week5]
 
-# plot_athletes_vs_split_for_workouts(weeks)
+plot_athletes_vs_split_for_workouts(weeks)
 
 
 unique_names = df['Name'].unique()
-columns_of_interest = ['Name', 'Dates', 'AverageTimeString']
+columns_of_interest = ['Name', 'Dates', 'AverageTimeString', 'AverageTimeInSeconds']
 
 for name in unique_names:
     filtered_df = df[df['Name'] == name]
     filtered_df = filtered_df.loc[:, columns_of_interest]
     filtered_df.sort_values(by='Dates', ascending=True, inplace=True)
-    print(filtered_df)
+    plot_split_versus_data_for_athlete(name, filtered_df)
+
