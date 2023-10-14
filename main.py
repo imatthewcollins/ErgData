@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 import math
 
+
+master_file = "data/master.xlsx"
+new_data_file = "data/new_data.xlsx"
+run_master = True
+
 # --------------------------------------
 
 def validate_and_convert(time):
@@ -160,8 +165,22 @@ def plot_week_data(df, week_number, workout, workout_date):
 
 # --------------------------------------
 
+def plot_athletes_vs_split_for_workouts(weeks):
+    for week_number, week in enumerate(weeks):
+        week_df = df[(df['Dates'] >= week[0]) & (df['Dates'] <= week[1])]
+        workout = week[2]
+        actual_workout_date = week[3]
+        plot_week_data(week_df, week_number + 1, workout, actual_workout_date)
+
+# --------------------------------------
+# PREPARING THE DATA
+# --------------------------------------
+
 # Import data
-df = pd.read_excel('data/231011.xlsx')
+if run_master:
+    df = pd.read_excel(master_file)
+else:
+    df = pd.read_excel(new_data_file)
 
 # Display all columns
 pd.set_option('display.max_columns', None)
@@ -189,11 +208,13 @@ df.sort_values(by='AverageTimeInSeconds', ascending=True, inplace=True)
 # Filter the DataFrame to remove rows with missing values
 df = df.dropna(subset=['AverageTimeInSeconds'])
 
-# Drop the 'NumericalTime' column if not needed
-# df.drop(columns=['AverageTimeInSeconds'], inplace=True)
-
 # Convert the 'Dates' column to datetime format
 df['Dates'] = pd.to_datetime(df['Enter today\'s date'])
+
+
+# --------------------------------------
+# PLOTTING DATA
+# --------------------------------------
 
 # # Filter by a date range
 week1 = ('2023-09-12', '2023-09-19', '3x8min r20,22,24', '2023-09-13')
@@ -204,11 +225,8 @@ week5 = ('2023-10-10', '2023-10-12', '3x10min r20,22,24', '2023-10-11')
 
 weeks = [week1, week2, week3, week4, week5]
 
-for week_number, week in enumerate(weeks):
-    week_df = df[(df['Dates'] >= week[0]) & (df['Dates'] <= week[1])]
-    workout = week[2]
-    actual_workout_date = week[3]
-    plot_week_data(week_df, week_number + 1, workout, actual_workout_date)
+# plot_athletes_vs_split_for_workouts(weeks)
+
 
 unique_names = df['Name'].unique()
 columns_of_interest = ['Name', 'Dates', 'AverageTimeString']
