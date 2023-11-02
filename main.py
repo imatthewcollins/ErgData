@@ -5,10 +5,6 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 import os
 
-
-master_file = "data/master.xlsx"
-new_data_file = "data/new_data.xlsx"
-
 # --------------------------------------
 
 def validate_and_convert(time):
@@ -94,8 +90,8 @@ def time_str_to_timedelta(time_input):
     try:
         time_str_parts = time.split(':')
         minutes = int(time_str_parts[0])
-        seconds, milliseconds = map(int, time_str_parts[1].split('.'))
-        return pd.Timedelta(minutes=minutes, seconds=seconds, milliseconds=milliseconds)
+        seconds = float(time_str_parts[1])
+        return pd.Timedelta(minutes=minutes, seconds=seconds)
     except ValueError:
         return pd.NaT
 
@@ -117,6 +113,7 @@ def time_str_to_numerical(time):
 def format_timedelta(timedelta_obj):
     if pd.notna(timedelta_obj):
         minutes, seconds = divmod(timedelta_obj.total_seconds(), 60)
+        # print(timedelta_obj.total_seconds(), minutes, seconds)
         seconds = round(seconds, 1)  # Round to one decimal place
         return f'{int(minutes):02}:{seconds:04.1f}'
     else:
@@ -236,11 +233,11 @@ def plot_athletes_vs_split_for_workouts(weeks):
 
 # --------------------------------------
 
-def merge_data(master_df, new_data_df):
-    common_ids = set(master_df['ID']) & set(new_data_df['ID'])
+def merge_data(old_essential_df, new_data_df):
+    common_ids = set(old_essential_df['ID']) & set(new_data_df['ID'])
     new_data_df_filtered = new_data_df[~new_data_df['ID'].isin(common_ids)]
 
-    new_master_df = pd.concat([master_df, new_data_df_filtered], ignore_index=True)
+    new_master_df = pd.concat([old_essential_df, new_data_df_filtered], ignore_index=True)
     new_master_df.to_excel('data/updated_master.xlsx', index=False)
 
     return new_master_df
@@ -252,9 +249,12 @@ def merge_data(master_df, new_data_df):
 
 # Import data
 
-master_df = pd.read_excel(master_file)
+old_data_file = "data/essential_old_data.xlsx"
+new_data_file = "data/new_data.xlsx"
+
+old_data_df = pd.read_excel(old_data_file)
 new_data_df = pd.read_excel(new_data_file)
-df = merge_data(master_df, new_data_df)
+df = merge_data(old_data_df, new_data_df)
 
 # Display all columns
 pd.set_option('display.max_columns', None)
@@ -265,7 +265,7 @@ columns_to_remove = ['ID', 'Start time', 'Completion time', 'Email', 'Last modif
 df = df.drop(columns=columns_to_remove)
 
 # Clean the data in the time columns
-time_columns = ['ENTER DATA AS MM:SS.S. Enter your AVERAGE SPLIT for the r20 piece (mm:ss.s)', 'ENTER DATA AS MM:SS.S. Enter your AVERAGE SPLIT for the r22 piece (mm:ss.s)', 'ENTER DATA AS MM:SS.S. Enter your AVERAGE SPLIT for the r24 piece (mm:ss.s)']
+time_columns = ['ENTER DATA AS MM:SS.S. Enter your AVERAGE SPLIT for the 4k piece (mm:ss.s)', 'ENTER DATA AS MM:SS.S. Enter your AVERAGE SPLIT for the 2k piece (mm:ss.s)', 'ENTER DATA AS MM:SS.S. Enter your AVERAGE SPLIT for the 1k piece (mm:ss.s)']
 for col in time_columns:
     df[col] = df[col].apply(validate_and_convert)
     df[col] = df[col].apply(time_str_to_timedelta)
@@ -296,18 +296,20 @@ week2 = ('2023-09-19', '2023-09-21', '2x12min r20,22,24', '2023-09-20')
 week3 = ('2023-09-26', '2023-09-28', '3x9min r20,22,24', '2023-09-27')
 week4 = ('2023-10-03', '2023-10-05', '2x13.5min r20,22,24', '2023-10-04')
 week5 = ('2023-10-10', '2023-10-12', '3x10min r20,22,24', '2023-10-11')
+week6 = ('2023-10-31', '2023-11-02', '4k_2k_1k', '2023-11-01')
 
-weeks = [week1, week2, week3, week4, week5]
+weeks = [week1, week2, week3, week4, week5, week6]
 
 plot_athletes_vs_split_for_workouts(weeks)
 
 
-unique_names = df['Name'].unique()
-columns_of_interest = ['Name', 'Dates', 'AverageTimeString', 'AverageTimeInSeconds']
+# df = df[df['Dates'] < '2023-10-31']
+# unique_names = df['Name'].unique()
+# columns_of_interest = ['Name', 'Dates', 'AverageTimeString', 'AverageTimeInSeconds']
 
-for name in unique_names:
-    filtered_df = df[df['Name'] == name]
-    filtered_df = filtered_df.loc[:, columns_of_interest]
-    filtered_df.sort_values(by='Dates', ascending=True, inplace=True)
-    plot_split_versus_data_for_athlete(name, filtered_df)
+# for name in unique_names:
+#     filtered_df = df[df['Name'] == name]
+#     filtered_df = filtered_df.loc[:, columns_of_interest]
+#     filtered_df.sort_values(by='Dates', ascending=True, inplace=True)
+#     plot_split_versus_data_for_athlete(name, filtered_df)
 
