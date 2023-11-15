@@ -250,7 +250,7 @@ def merge_data(old_essential_df, new_data_df):
 # Import data
 
 old_data_file = "data/essential_old_data.xlsx"
-new_data_file = "data/new_data.xlsx"
+new_data_file = "data/231115_new_data.xlsx"
 
 old_data_df = pd.read_excel(old_data_file)
 new_data_df = pd.read_excel(new_data_file)
@@ -297,8 +297,10 @@ week3 = ('2023-09-26', '2023-09-28', '3x9min r20,22,24', '2023-09-27')
 week4 = ('2023-10-03', '2023-10-05', '2x13.5min r20,22,24', '2023-10-04')
 week5 = ('2023-10-10', '2023-10-12', '3x10min r20,22,24', '2023-10-11')
 week6 = ('2023-10-31', '2023-11-02', '4k_2k_1k', '2023-11-01')
+week7 = ('2023-11-14', '2023-11-16', '3x10min 4,3,2,1 r20,22,24,26', '2023-11-15')
 
-weeks = [week1, week2, week3, week4, week5, week6]
+weeks = [week1, week2, week3, week4, week5, week6, week7]
+# weeks = [week7]
 
 plot_athletes_vs_split_for_workouts(weeks)
 
